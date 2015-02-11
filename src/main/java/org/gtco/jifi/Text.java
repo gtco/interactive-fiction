@@ -26,7 +26,7 @@ public class Text {
         m_abbrTable = mm.getWord(MemoryMap.ABBR_TABLE);
     }
 
-    public List decode(int address) {
+    public List<Byte> decode(int address) {
         byte[] buf = new byte[3];
 //        byte[] enc;
         List<Byte> list = new ArrayList<Byte>();
@@ -148,7 +148,7 @@ public class Text {
             b[i] = (Byte) list.get(i);
 
         try {
-            strRet = new String(b, "US-ASCII");
+            strRet = new String(b, "UTF-8");
         } catch (Exception e) {
             e.printStackTrace();
         }

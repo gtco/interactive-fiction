@@ -2,14 +2,14 @@ package org.gtco.jifi;
 
 public class StoryObject {
 
-    private long m_attributes;
+    private String m_attributes;
     private int m_parent;
     private int m_sibling;
     private int m_child;
     private int m_properties;
 
     public StoryObject(long attributes, int parent, int sibling, int child, int properties) {
-        m_attributes = attributes;
+        m_attributes = Long.toBinaryString(attributes);
         m_parent = parent;
         m_sibling = sibling;
         m_child = child;
@@ -17,11 +17,11 @@ public class StoryObject {
     }
 
     public String toString() {
-        return Long.toBinaryString(m_attributes) + ", " + m_properties + ", "
+        return m_attributes + ", " + m_properties + ", "
                 + m_parent + ", " + m_sibling + ", " + m_child;
     }
 
-    public long getAttributes() {
+    public String getAttributes() {
         return m_attributes;
     }
 
@@ -42,7 +42,17 @@ public class StoryObject {
     }
 
     public boolean isAttributeSet(int attribute) {
-        return false;
+
+
+        boolean b = false;
+
+        if (m_attributes.charAt(attribute) == '1') {
+            b = true;
+        }
+
+        return b;
+
     }
+
 
 }

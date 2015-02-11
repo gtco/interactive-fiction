@@ -28,3 +28,4 @@ release.properties
 out/
 # GC
 if/
+*.log

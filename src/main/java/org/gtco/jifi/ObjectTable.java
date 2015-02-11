@@ -25,7 +25,7 @@ public class ObjectTable {
     private int m_defaults[];
 
     // Object Tree
-    private Vector<StoryObject> m_objects;
+    private Vector<StoryObject> objects;
 
     static Logger m_log = LoggerFactory.getLogger(ObjectTable.class);
 
@@ -33,15 +33,19 @@ public class ObjectTable {
         m_address = mm.getWord(MemoryMap.OBJECT_TABLE);
         m_map = mm;
         m_defaults = new int[PROPERTY_DEFAULT];
-        m_objects = new Vector<StoryObject>(OBJECT_MAX + 1);
-        m_objects.setSize(OBJECT_MAX + 1);
+        objects = new Vector<StoryObject>(OBJECT_MAX + 1);
+        objects.setSize(OBJECT_MAX + 1);
     }
 
     public void setProperty(Argument index, Argument property, Argument value) {
-        StoryObject s = (StoryObject) m_objects.get(index.getValue());
+        StoryObject s = (StoryObject) objects.get(index.getValue());
         PropertyTable tbl = new PropertyTable(s.getProperties(), m_map);
         tbl.setValue(property.getValue(), value.getValue());
         m_log.debug("\"" + tbl.getName() + "\" " + s);
+    }
+
+    public boolean isAttributeSet(int n, int a) {
+        return objects.get(n).isAttributeSet(a);
     }
 
     public void load() {
@@ -79,18 +83,16 @@ public class ObjectTable {
             StoryObject obj = new StoryObject(attributes, parent, sibling, child, properties);
             PropertyTable ptable = new PropertyTable(properties, m_map);
 
-/*
-            m_log.debug("--------------------");
-            m_log.debug(ptable.getName());
-            m_log.debug("table address=" + ptable.getAddress() + ", text-length="
-            	+ ptable.getTextLength());
-            m_log.debug(obj);
-*/
-            m_objects.setElementAt(obj, object_index);
+
+            m_log.debug("--------- " + object_index + " -----------");
+            m_log.debug(ptable.getName() + ", addr=" + ptable.getAddress() + ", len="
+            	+ ptable.getTextLength() +", " + obj);
+
+            objects.setElementAt(obj, object_index);
 
             // Stop if the current address equals the property list value for
             // the first object (i.e. we've gone to far)
-            if (n == ((StoryObject) m_objects.elementAt(1)).getProperties())
+            if (n == ((StoryObject) objects.elementAt(1)).getProperties())
                 done = true;
         }
     }

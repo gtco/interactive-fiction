@@ -62,7 +62,7 @@ public class Environment {
         m_map.setWord(addr, value);
     }
 
-    public Vector createArgumentList(int types) {
+    public Vector<Argument> createArgumentList(int types) {
         Vector<Argument> v = new Vector<Argument>();
         int t = 0, value = 0;
         for (int j = 6; j >= 0; j -= 2) {
@@ -101,7 +101,7 @@ public class Environment {
         return a;
     }
 
-    public Vector createArgumentList(int instruction, int arg1, int arg2) {
+    public Vector<Argument> createArgumentList(int instruction, int arg1, int arg2) {
         Vector<Argument> v = new Vector<Argument>();
 
         if ((instruction & 0x40) == 0)
@@ -254,11 +254,11 @@ public class Environment {
     public void exec(int instruction, int arg1, int arg2) {
         // 2OP Opcodes
         int op = instruction & 0x1f;        // %0abxxxxx
-        Vector args = createArgumentList(instruction, arg1, arg2);
+        Vector<Argument> args = createArgumentList(instruction, arg1, arg2);
         m_log.debug("instruction=" + instruction + ", arguments=" + args);
         switch (op) {
             case Opcode.je:
-                je((Argument) args.elementAt(0), (Argument) args.elementAt(1));
+                je(args.elementAt(0), args.elementAt(1));
                 break;
             case Opcode.jl:
                 haltExecution();
@@ -285,7 +285,7 @@ public class Environment {
                 haltExecution();
                 break;
             case Opcode.test_attr:
-                haltExecution();
+                test_attr(args.elementAt(0), args.elementAt(1));
                 break;
             case Opcode.set_attr:
                 haltExecution();
@@ -300,7 +300,7 @@ public class Environment {
                 haltExecution();
                 break;
             case Opcode.loadw:
-                loadw((Argument) args.elementAt(0), (Argument) args.elementAt(1));
+                loadw(args.elementAt(0), args.elementAt(1));
                 break;
             case Opcode.loadb:
                 haltExecution();
@@ -342,6 +342,7 @@ public class Environment {
             offset = b & 0x3f;
             /* m_pc = <address after branch data> + offset - 2; */
         } else {
+            m_log.error("Multiple byte offset not implemented");
             // wip
         }
         return offset;
@@ -500,6 +501,31 @@ public class Environment {
         m_stack.push(r);
     }
 
+    public void test_attr(Argument arg1, Argument arg2) {
+        m_log.debug("test_attr, arg1 = " + ", arg2 = " + arg2);
+
+        int value1 = arg1.getValue(this);
+        int value2 = arg2.getValue(this);
+
+        boolean eq = m_table.isAttributeSet(value1, value2);
+
+        int b = m_map.getByte(m_pc++);
+        /*  If bit 7 of the first byte is 0, a branch occurs on false;
+            if 1, then branch is on true. */
+        boolean condt = ((b & 0x80) == 0x80) ? true : false;
+        int offset = getBranchOffset(b);
+        int addr = m_pc + offset - 2;
+
+        if (eq == condt) {
+            m_pc = addr;
+            m_log.debug("jumping: " + Integer.toHexString(addr) + ", offset " + offset);
+        } else {
+            m_log.debug("branch failed: eq=" + eq + ", condt=" + condt);
+        }
+        m_routine.setPc(m_pc);
+    }
+
+
     public void run() {
 
         m_log.debug("Loading object table");
@@ -536,24 +562,41 @@ public class Environment {
                 //				m_done = true;
             } else if (i < 0xc0) { // 0op, ext
                 if (i != 0xbe) {
-                    //				execute(opcode);
+                    exec(i);
                 } else {
-                    // Extended Opcode, Not yet implemented
+                    m_log.error("Extended Opcode, Not yet implemented");
+                    m_done = true;
                 }
-                m_done = true;
             } else {
                 //	$c0 -- $df  variable  2OP     (operand types in next byte)
                 //	$e0 -- $ff  variable  VAR     (operand types in next byte(s))
                 int operandTypes = m_map.getByte(m_pc++);
-                Vector v = createArgumentList(operandTypes);
+                Vector<Argument> v = createArgumentList(operandTypes);
                 // always save m_pc before execute
                 m_routine.setPc(m_pc);
                 exec(i, v);
             }
-
         }
 
         m_log.debug("Ending eval loop, done = " + m_done + ", stack size = " + (m_stack != null ? m_stack.size() : "null stack"));
+    }
+
+    private void exec(int i) {
+        String s;
+        int op = i & 0x0f;        // %10ttxxxx
+        switch (op) {
+            case Opcode.print:
+                Text t = new Text(m_map);
+                List<Byte> zs = t.decode(m_pc);
+                s = t.convert(zs);
+                System.out.println(s);
+                break;
+            default:
+                m_log.error("0OP code not implemented = " + op);
+
+        }
+
+        haltExecution();
     }
 
 }
